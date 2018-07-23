@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<plugin xmlns="http://www.phonegap.com/ns/plugins/1.0"
+    id="stringee-cordova-plugin"
+    version="1.0.0">
+
+    <!-- Thong tin dinh danh plugin -->
+    <name>StringeeCordovaPlugin</name>
+    <description>Add live video streaming to your Cordova Application</description>
+    <license>Apache 2.0</license>
+    <keywords>stringee</keywords>
+
+    <!-- Tham chieu den file javascript code -->
+    <asset src="www/stringee.js" target="stringee.js"/>
+
+    <js-module src="www/stringee.js" name="stringee">
+      <clobbers target="stringee" />
+    </js-module>
+
+    <!-- android -->
+	<platform name="android">
+		<framework src="build-extras.gradle" custom="true" type="gradleReference" />		
+		<framework src="com.stringee.sdk.android:stringee-android-sdk:1.2.18" />
+		
+		<source-file src="src/android/StringeeAndroidPlugin.java" target-dir="src/com/stringee/cordova/" />
+		
+		<asset src="www/stringee.js" target="stringee.js" />
+	         		
+		<config-file target="AndroidManifest.xml" parent="/manifest">
+        <uses-permission android:name="android.permission.CAMERA" />
+        <uses-permission android:name="android.permission.INTERNET" />
+        <uses-permission android:name="android.permission.RECORD_AUDIO" />        
+        <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+        <uses-feature android:name="android.hardware.camera" android:required="true" />
+        <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+		</config-file>
+		
+		<config-file target="res/xml/config.xml" parent="/*">
+            <feature name="StringeePlugin" >
+                <param name="android-package" value="com.stringee.cordova.StringeeAndroidPlugin"/>
+            </feature>
+        </config-file>        
+    </platform>    
+
+    <!-- iOS -->
+    <platform name="ios">
+    <hook type="before_plugin_install" src="scripts/downloadiOSSDK.js" />
+
+    <framework src="libicucore.tbd" />
+    <framework src="libstdc++.dylib" />
+    <!-- <framework src="libc++.dylib" />
+    <framework src="libxml2.dylib" />
+    <framework src="libsqlite3.dylib" />
+    <framework src="libpthread.dylib" /> -->
+    <framework src="VideoToolbox.framework" />
+    <framework src="src/ios/Stringee.framework" custom="true" />
+    <framework src="AudioToolbox.framework" />
+    <!-- <framework src="CoreData.framework" /> -->
+    <framework src="AVFoundation.framework" />
+    <!-- <framework src="CoreGraphics.framework" />
+    <framework src="CoreMedia.framework" />
+    <framework src="CoreVideo.framework" />
+    <framework src="OpenGLES.framework" />
+    <framework src="SystemConfiguration.framework" />
+    <framework src="CoreTelephony.framework" /> -->
+    <framework src="GLKit.framework" />
+    <!-- <framework src="EventKit.framework" />
+    <framework src="QuartzCore.framework" />
+    <framework src="MapKit.framework" />
+    <framework src="UIKit.framework" /> -->
+    <framework src="CoreFoundation.framework" />
+    <!-- <framework src="Security.framework" />
+    <framework src="CFNetwork.framework" /> -->
+    
+      <config-file target="config.xml" parent="/*">
+        <feature name="StringeePlugin">
+          <param name="ios-package" value="StringeePlugin" />
+          <param name="onload" value="true" />
+        </feature>
+      </config-file>
+
+      <!-- Tham chieu den file source native -->
+      <header-file src="src/ios/StringeePlugin.h" />
+      <source-file src="src/ios/StringeePlugin.m" />
+
+    </platform>
+
+</plugin>

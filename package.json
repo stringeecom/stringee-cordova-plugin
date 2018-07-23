@@ -1,0 +1,33 @@
+{
+  "name": "stringee-cordova-plugin",
+  "version": "1.0.0",
+  "description": "Add live video streaming to your Cordova Application",
+  "cordova": {
+    "id": "stringee-cordova-plugin",
+    "platforms": [
+      "android",
+      "ios"
+    ]
+  },
+  "dependencies": {
+    "exec": "^0.2.0",
+    "tar": "^2.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stringeecom/stringee-cordova-plugin.git"
+  },
+  "keywords": [
+    "cordova",
+    "plugin",
+    "stringee",
+    "ecosystem:cordova",
+    "cordova-android"
+  ],
+  "author": "Stringee <info@stringee.com>",
+  "license": "Apache-2",
+  "bugs": {
+    "url": "https://github.com/stringeecom/stringee-cordova-plugin/issues"
+  },
+  "homepage": "https://github.com/stringeecom/stringee-cordova-plugin#readme"
+}

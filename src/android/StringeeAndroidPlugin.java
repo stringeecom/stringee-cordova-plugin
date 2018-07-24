@@ -42,7 +42,7 @@ public class StringeeAndroidPlugin extends CordovaPlugin implements StringeeConn
     }
 
     @Override
-    public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
+    public boolean execute(String action, JSONArray args, final CallbackContext callbackContext) throws JSONException {
         if (action.equals("initStringeeClient")) {
             mClient = new StringeeClient(this.cordova.getActivity());
             mClient.setConnectionListener(this);
@@ -181,7 +181,7 @@ public class StringeeAndroidPlugin extends CordovaPlugin implements StringeeConn
             }
             mCall.sendDTMF(args.getString(1));
         } else if (action.equals("renderVideo")) {
-            StringeeCall mCall = callMap.get(args.getString(0));
+            final StringeeCall mCall = callMap.get(args.getString(0));
             if (mCall == null) {
                 callbackContext.error("StringeeCall not found.");
                 return true;

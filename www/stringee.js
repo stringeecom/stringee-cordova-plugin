@@ -103,6 +103,15 @@ window.Stringee = {
     }
     this.StringeeHelper = this.StringeeHelper || StringeeHelpers.noConflict();
     return this.StringeeHelper;
+  },
+  requestPermissions: function(camera, successCallback, errorCallback) {
+    Cordova.exec(
+      successCallback,
+      errorCallback,
+      StringeePlugin,
+      "requestPermissions",
+      [camera]
+    );
   }
 };
 

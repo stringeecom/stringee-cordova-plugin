@@ -132,6 +132,11 @@ StringeeClient = (function() {
     this.hasConnected = false;
 
     this.didConnect = __bind(this.didConnect, this);
+    this.didDisConnect = __bind(this.didDisConnect, this);
+    this.didFailWithError = __bind(this.didFailWithError, this);
+    this.requestAccessToken = __bind(this.requestAccessToken, this);
+    this.incomingCall = __bind(this.incomingCall, this);
+
     this.eventReceived = __bind(this.eventReceived, this);
     Stringee.getHelper().eventing(this);
     Cordova.exec(

@@ -3,6 +3,7 @@ package com.stringee.cordova;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 
 import com.stringee.StringeeClient;
 import com.stringee.call.StringeeCall;
@@ -187,20 +188,36 @@ public class StringeeAndroidPlugin extends CordovaPlugin implements StringeeConn
                 return true;
             }
             boolean isLocal = args.getBoolean(1);
+            int top = dpToPx(args.getInt(2));
+            int left = dpToPx(args.getInt(3));
+            int width = dpToPx(args.getInt(4));
+            int height = dpToPx(args.getInt(5));
+            int zIndex = args.getInt(6);
+            boolean overlay = false;
+            if (zIndex > 0) {
+                overlay = true;
+            }
+            final boolean finalOverlay = overlay;
+            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(width, height);
+            params.setMargins(left, top, left + width, top + height);
+            FrameLayout mContainer = new FrameLayout(cordova.getContext());
+            mContainer.setLayoutParams(params);
             if (isLocal) {
                 cordova.getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        ((ViewGroup) webView.getView().getParent()).addView(mCall.getLocalView());
-                        mCall.renderLocalView(false);
+                        mContainer.addView(mCall.getLocalView());
+                        ((ViewGroup) webView.getView().getParent()).addView(mContainer);
+                        mCall.renderLocalView(finalOverlay);
                     }
                 });
             } else {
                 cordova.getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        ((ViewGroup) webView.getView().getParent()).addView(mCall.getRemoteView());
-                        mCall.renderRemoteView(true);
+                        mContainer.addView(mCall.getRemoteView());
+                        ((ViewGroup) webView.getView().getParent()).addView(mContainer);
+                        mCall.renderRemoteView(finalOverlay);
                     }
                 });
             }
@@ -217,6 +234,7 @@ public class StringeeAndroidPlugin extends CordovaPlugin implements StringeeConn
                     } else {
                         callbackContext.error(s);
                     }
+
                 }
 
                 @Override
@@ -513,5 +531,12 @@ public class StringeeAndroidPlugin extends CordovaPlugin implements StringeeConn
             e.printStackTrace();
         }
         triggerJSEvent(stringeeCall.getCustomId(), "didReceiveCallInfo", data);
+    }
+
+    private int dpToPx(int dp) {
+        float density = cordova.getContext().getResources()
+                .getDisplayMetrics()
+                .density;
+        return Math.round((float) dp * density);
     }
 }

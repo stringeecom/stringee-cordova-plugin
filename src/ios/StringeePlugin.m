@@ -174,7 +174,9 @@ static NSString *didHandleOnAnotherDevice   = @"didHandleOnAnotherDevice";
     [eventData setObject:stringeeCall.toAlias forKey:@"toAlias"];
     [eventData setObject:@(index) forKey:@"callType"];
     [eventData setObject:@(stringeeCall.isVideoCall) forKey:@"isVideoCall"];
-    [eventData setObject:stringeeCall.customDataFromYourServer forKey:@"customDataFromYourServer"];
+    
+    id customData = stringeeCall.customDataFromYourServer ? stringeeCall.customDataFromYourServer : [NSNull null];
+    [eventData setObject:customData forKey:@"customDataFromYourServer"];
 
     [self triggerJSEvent: clientEvents withType: incomingCall withData: eventData];    
 }
@@ -214,7 +216,8 @@ static NSString *didHandleOnAnotherDevice   = @"didHandleOnAnotherDevice";
             NSMutableDictionary* eventData = [[NSMutableDictionary alloc] init];
             [eventData setObject:@(code) forKey:@"code"];
             [eventData setObject:message forKey:@"message"];
-            [eventData setObject:data forKey:@"customDataFromYourServer"];
+            id customData = data ? data : [NSNull null];
+            [eventData setObject:customData forKey:@"customDataFromYourServer"];
 
             [eventData setObject:outgoingCall.callId forKey:@"callId"];
             [eventData setObject:outgoingCall.from forKey:@"from"];

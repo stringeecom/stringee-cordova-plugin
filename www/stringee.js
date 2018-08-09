@@ -267,6 +267,7 @@ StringeeClient = (function() {
     incCall.toAlias = event.toAlias;
     incCall.callType = event.callType;
     incCall.customDataFromYourServer = event.customDataFromYourServer;
+    incCall.isVideoCall = event.isVideoCall;
     connectionEvent.call = incCall;
 
     this.dispatchEvent(connectionEvent);

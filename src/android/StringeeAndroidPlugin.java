@@ -375,6 +375,7 @@ public class StringeeAndroidPlugin extends CordovaPlugin implements StringeeConn
                 callType = 3;
             }
             data.put("callType", callType);
+            data.put("isVideoCall", stringeeCall.isVideoCall());
         } catch (JSONException e) {
             e.printStackTrace();
         }

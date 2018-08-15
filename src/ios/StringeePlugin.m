@@ -27,6 +27,8 @@ static NSString *didHandleOnAnotherDevice   = @"didHandleOnAnotherDevice";
     NSMutableDictionary *callList;
     NSMutableOrderedSet *signalingEndList;
     NSMutableOrderedSet *mediaEndList;
+    BOOL isSpeaker;
+    BOOL hasChangeDefaultSpeaker;
 }
 
 #pragma mark Common
@@ -148,7 +150,12 @@ static NSString *didHandleOnAnotherDevice   = @"didHandleOnAnotherDevice";
 
 - (void)incomingCallWithStringeeClient:(StringeeClient *)stringeeClient stringeeCall:(StringeeCall *)stringeeCall {
     [callList setObject:stringeeCall forKey:stringeeCall.callId];
-
+    if (stringeeCall.isVideoCall) {
+        isSpeaker = YES;
+    } else {
+        isSpeaker = NO;
+    }
+    
     int index = 0;
 
     if (stringeeCall.callType == CallTypeCallIn) {
@@ -213,6 +220,11 @@ static NSString *didHandleOnAnotherDevice   = @"didHandleOnAnotherDevice";
     StringeeCall *outgoingCall = [callList objectForKey:iden];
     if (outgoingCall) {
         [outgoingCall makeCallWithCompletionHandler:^(BOOL status, int code, NSString *message, NSString *data) {
+            if (outgoingCall.isVideoCall) {
+                isSpeaker = YES;
+            } else {
+                isSpeaker = NO;
+            }
             NSMutableDictionary* eventData = [[NSMutableDictionary alloc] init];
             [eventData setObject:@(code) forKey:@"code"];
             [eventData setObject:message forKey:@"message"];
@@ -498,6 +510,7 @@ static NSString *didHandleOnAnotherDevice   = @"didHandleOnAnotherDevice";
 
     StringeeCall *call = [callList objectForKey:iden];
     if (call) {
+        isSpeaker = [speaker boolValue];
         [[StringeeAudioManager instance] setLoudspeaker:[speaker boolValue]];
         NSMutableDictionary* eventData = [[NSMutableDictionary alloc] init];
         [eventData setObject:@(0) forKey:@"code"];
@@ -557,15 +570,22 @@ static NSString *didHandleOnAnotherDevice   = @"didHandleOnAnotherDevice";
     int width = [[command.arguments objectAtIndex:4] intValue];
     int height = [[command.arguments objectAtIndex:5] intValue];
     int zIndex = [[command.arguments objectAtIndex:6] intValue];
-
+    
     StringeeCall *call = [callList objectForKey:iden];
 
     if (call) {
         if (isLocal) {
             [self.webView.scrollView addSubview:call.localVideoView];
+            call.localVideoView.userInteractionEnabled = NO;
             [call.localVideoView setFrame:CGRectMake(left, top, width, height)];
             // Set depth location of camera view based on CSS z-index.
             call.localVideoView.layer.zPosition = zIndex;
+
+//            [self.webView.superview addSubview:call.localVideoView];
+//            [call.localVideoView setFrame:CGRectMake(left, top, width, height)];
+//            call.localVideoView.userInteractionEnabled = NO;
+//            // Set depth location of camera view based on CSS z-index.
+//            call.localVideoView.layer.zPosition = zIndex;
         } else {
             UIView *containRemoteView = [[UIView alloc] init];
             [containRemoteView setBackgroundColor:[UIColor blackColor]];
@@ -573,9 +593,10 @@ static NSString *didHandleOnAnotherDevice   = @"didHandleOnAnotherDevice";
             [containRemoteView addSubview:call.remoteVideoView];
             [self.webView.scrollView addSubview:containRemoteView];
             call.remoteVideoView.delegate = self;
+            call.remoteVideoView.userInteractionEnabled = NO;
             [call.remoteVideoView setFrame:CGRectMake(left, top, width, height)];
             // Set depth location of camera view based on CSS z-index.
-            call.remoteVideoView.layer.zPosition = zIndex;
+            containRemoteView.layer.zPosition = zIndex;
         }
         NSMutableDictionary* eventData = [[NSMutableDictionary alloc] init];
         [eventData setObject:@(0) forKey:@"code"];
@@ -629,9 +650,19 @@ static NSString *didHandleOnAnotherDevice   = @"didHandleOnAnotherDevice";
 
     if (signalingState == SignalingStateBusy || signalingState == SignalingStateEnded) {
         [signalingEndList addObject:stringeeCall.callId];
+        if (stringeeCall.localVideoView.superview) {
+            [stringeeCall.localVideoView removeFromSuperview];
+        }
+        if (stringeeCall.remoteVideoView.superview) {
+            [stringeeCall.remoteVideoView removeFromSuperview];
+        }
+        
+        isSpeaker = NO;
+        hasChangeDefaultSpeaker = NO;
     }
 
     [self checkAndReleaseCall:stringeeCall];
+    
 }
 
 - (void)didChangeMediaState:(StringeeCall *)stringeeCall mediaState:(MediaState)mediaState {
@@ -640,6 +671,10 @@ static NSString *didHandleOnAnotherDevice   = @"didHandleOnAnotherDevice";
     [eventData setObject:stringeeCall.callId forKey:@"callId"];
     switch (mediaState) {
         case MediaStateConnected:
+            if (!hasChangeDefaultSpeaker) {
+                hasChangeDefaultSpeaker = !hasChangeDefaultSpeaker;
+                [[StringeeAudioManager instance] setLoudspeaker:isSpeaker];
+            }
             [eventData setObject:@(0) forKey:@"code"];
             [eventData setObject:@"Connected" forKey:@"description"];
             [mediaEndList removeObject:stringeeCall.callId];

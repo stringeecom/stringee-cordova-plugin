@@ -480,6 +480,7 @@ StringeeCall = (function() {
 
   StringeeCall.prototype.renderVideo = function(
     isLocal,
+    isOverlay,
     element,
     successCallback,
     errorCallback
@@ -500,7 +501,8 @@ StringeeCall = (function() {
         position.left,
         position.width,
         position.height,
-        zIndex
+        zIndex,
+        isOverlay
       ]
     );
   };

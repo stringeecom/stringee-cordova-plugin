@@ -2,6 +2,7 @@ package com.stringee.cordova;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
@@ -33,8 +34,19 @@ public class StringeeAndroidPlugin extends CordovaPlugin implements StringeeConn
     private static final String[] permsVideoCall = {Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA};
     private CallbackContext permissionsCallback;
 
+    private FrameLayout localContainer;
+    private FrameLayout remoteContainer;
+
+    static CordovaWebView _webView;
+
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
+
+        _webView = webView;
+
+        // Make the web view transparent.
+        _webView.getView().setBackgroundColor(Color.argb(1, 0, 0, 0));
+
         myEventListeners = new HashMap<>();
         callMap = new HashMap<>();
         makeCallListeners = new HashMap<>();
@@ -95,7 +107,9 @@ public class StringeeAndroidPlugin extends CordovaPlugin implements StringeeConn
                 return true;
             }
 
+            mCall.setCallListener(this);
             mCall.initAnswer(cordova.getActivity(), mClient);
+            callbackContext.success("Success");
         } else if (action.equals("addEvent")) {
             myEventListeners.put(args.getString(0), callbackContext);
         } else if (action.equals("hangup")) {
@@ -109,6 +123,38 @@ public class StringeeAndroidPlugin extends CordovaPlugin implements StringeeConn
                 return true;
             }
             mCall.hangup();
+            cordova.getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (localContainer != null) {
+                        ((ViewGroup) webView.getView().getParent()).removeView(localContainer);
+                    }
+                    if (remoteContainer != null) {
+                        ((ViewGroup) webView.getView().getParent()).removeView(remoteContainer);
+                    }
+                }
+            });
+            callbackContext.success("Success");
+
+            JSONObject data = new JSONObject();
+            try {
+                data.put("callId", mCall.getCallId());
+                data.put("code", StringeeCall.SignalingState.ENDED.getValue());
+                data.put("reason", "Ended");
+                data.put("sipCode", -1);
+                data.put("sipReason", "Bye");
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            JSONObject message = new JSONObject();
+            try {
+                message.put("eventType", "didChangeSignalingState");
+                message.put("data", data);
+            } catch (JSONException e) {
+            }
+            PluginResult myResult = new PluginResult(PluginResult.Status.OK, message);
+            myResult.setKeepCallback(true);
+            myEventListeners.get(mCall.getCustomId()).sendPluginResult(myResult);
         } else if (action.equals("answer")) {
             if (mClient == null) {
                 callbackContext.error("StringeeClient is not initialized.");
@@ -120,6 +166,7 @@ public class StringeeAndroidPlugin extends CordovaPlugin implements StringeeConn
                 return true;
             }
             mCall.answer();
+            callbackContext.success("Success");
         } else if (action.equals("reject")) {
             if (mClient == null) {
                 callbackContext.error("StringeeClient is not initialized.");
@@ -131,6 +178,27 @@ public class StringeeAndroidPlugin extends CordovaPlugin implements StringeeConn
                 return true;
             }
             mCall.reject();
+            callbackContext.success("Success");
+
+            JSONObject data = new JSONObject();
+            try {
+                data.put("callId", mCall.getCallId());
+                data.put("code", StringeeCall.SignalingState.ENDED.getValue());
+                data.put("reason", "Ended");
+                data.put("sipCode", -1);
+                data.put("sipReason", "Bye");
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            JSONObject message = new JSONObject();
+            try {
+                message.put("eventType", "didChangeSignalingState");
+                message.put("data", data);
+            } catch (JSONException e) {
+            }
+            PluginResult myResult = new PluginResult(PluginResult.Status.OK, message);
+            myResult.setKeepCallback(true);
+            myEventListeners.get(mCall.getCustomId()).sendPluginResult(myResult);
         } else if (action.equals("mute")) {
             StringeeCall mCall = callMap.get(args.getString(0));
             if (mCall != null) {
@@ -143,9 +211,12 @@ public class StringeeAndroidPlugin extends CordovaPlugin implements StringeeConn
             }
         } else if (action.equals("switchCamera")) {
             StringeeCall mCall = callMap.get(args.getString(0));
-            if (mCall != null) {
-                mCall.switchCamera(null);
+            if (mCall == null) {
+                callbackContext.error("StringeeCall not found");
+                return true;
             }
+            mCall.switchCamera(null);
+            callbackContext.success("Success");
         } else if (action.equals("enableVideo")) {
             StringeeCall mCall = callMap.get(args.getString(0));
             if (mCall != null) {
@@ -193,10 +264,7 @@ public class StringeeAndroidPlugin extends CordovaPlugin implements StringeeConn
             int width = dpToPx(args.getInt(4));
             int height = dpToPx(args.getInt(5));
             int zIndex = args.getInt(6);
-            boolean overlay = false;
-            if (zIndex > 0) {
-                overlay = true;
-            }
+            boolean overlay = args.getBoolean(7);
             final boolean finalOverlay = overlay;
             FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(width, height);
             params.setMargins(left, top, left + width, top + height);
@@ -206,8 +274,12 @@ public class StringeeAndroidPlugin extends CordovaPlugin implements StringeeConn
                 cordova.getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
+                        if (localContainer != null && localContainer.getChildCount() > 0) {
+                            localContainer.removeAllViews();
+                        }
                         mContainer.addView(mCall.getLocalView());
-                        ((ViewGroup) webView.getView().getParent()).addView(mContainer);
+                        localContainer = mContainer;
+                        ((ViewGroup) webView.getView().getParent()).addView(localContainer, zIndex);
                         mCall.renderLocalView(finalOverlay);
                     }
                 });
@@ -215,8 +287,12 @@ public class StringeeAndroidPlugin extends CordovaPlugin implements StringeeConn
                 cordova.getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
+                        if (remoteContainer != null && remoteContainer.getChildCount() > 0) {
+                            remoteContainer.removeAllViews();
+                        }
                         mContainer.addView(mCall.getRemoteView());
-                        ((ViewGroup) webView.getView().getParent()).addView(mContainer);
+                        remoteContainer = mContainer;
+                        ((ViewGroup) webView.getView().getParent()).addView(remoteContainer, zIndex);
                         mCall.renderRemoteView(finalOverlay);
                     }
                 });

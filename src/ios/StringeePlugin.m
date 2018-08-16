@@ -29,6 +29,7 @@ static NSString *didHandleOnAnotherDevice   = @"didHandleOnAnotherDevice";
     NSMutableOrderedSet *mediaEndList;
     BOOL isSpeaker;
     BOOL hasChangeDefaultSpeaker;
+    CGRect remoteRect;
 }
 
 #pragma mark Common
@@ -570,7 +571,8 @@ static NSString *didHandleOnAnotherDevice   = @"didHandleOnAnotherDevice";
     int width = [[command.arguments objectAtIndex:4] intValue];
     int height = [[command.arguments objectAtIndex:5] intValue];
     int zIndex = [[command.arguments objectAtIndex:6] intValue];
-    
+    BOOL isOverlay = [[command.arguments objectAtIndex:7] boolValue];
+
     StringeeCall *call = [callList objectForKey:iden];
 
     if (call) {
@@ -581,22 +583,15 @@ static NSString *didHandleOnAnotherDevice   = @"didHandleOnAnotherDevice";
             // Set depth location of camera view based on CSS z-index.
             call.localVideoView.layer.zPosition = zIndex;
 
-//            [self.webView.superview addSubview:call.localVideoView];
-//            [call.localVideoView setFrame:CGRectMake(left, top, width, height)];
-//            call.localVideoView.userInteractionEnabled = NO;
-//            // Set depth location of camera view based on CSS z-index.
-//            call.localVideoView.layer.zPosition = zIndex;
         } else {
-            UIView *containRemoteView = [[UIView alloc] init];
-            [containRemoteView setBackgroundColor:[UIColor blackColor]];
-            [containRemoteView setFrame:CGRectMake(left, top, width, height)];
-            [containRemoteView addSubview:call.remoteVideoView];
-            [self.webView.scrollView addSubview:containRemoteView];
+            
+            remoteRect = CGRectMake(left, top, width, height);
+            [self.webView.scrollView addSubview:call.remoteVideoView];
             call.remoteVideoView.delegate = self;
             call.remoteVideoView.userInteractionEnabled = NO;
-            [call.remoteVideoView setFrame:CGRectMake(left, top, width, height)];
-            // Set depth location of camera view based on CSS z-index.
-            containRemoteView.layer.zPosition = zIndex;
+            [call.remoteVideoView setFrame:CGRectMake(0, 0, width, height)];
+            call.remoteVideoView.layer.zPosition = zIndex;
+            
         }
         NSMutableDictionary* eventData = [[NSMutableDictionary alloc] init];
         [eventData setObject:@(0) forKey:@"code"];
@@ -615,8 +610,13 @@ static NSString *didHandleOnAnotherDevice   = @"didHandleOnAnotherDevice";
 - (void)videoView:(StringeeRemoteVideoView *)videoView didChangeVideoSize:(CGSize)size {
 
     // Thay đổi frame của StringeeRemoteVideoView khi kích thước video thay đổi
-    CGFloat superWidth = videoView.superview.bounds.size.width;
-    CGFloat superHeight = videoView.superview.bounds.size.height;
+    NSLog(@"%f - %f", remoteRect.size.width, remoteRect.size.height);
+    if (!remoteRect.size.width || !remoteRect.size.height) {
+        return;
+    }
+    
+    CGFloat superWidth = remoteRect.size.width;
+    CGFloat superHeight = remoteRect.size.height;
     
     CGFloat newWidth;
     CGFloat newHeight;
@@ -659,6 +659,7 @@ static NSString *didHandleOnAnotherDevice   = @"didHandleOnAnotherDevice";
         
         isSpeaker = NO;
         hasChangeDefaultSpeaker = NO;
+        remoteRect = CGRectZero;
     }
 
     [self checkAndReleaseCall:stringeeCall];
